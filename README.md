@@ -25,9 +25,9 @@ schedtool git e2fsprogs device-tree-compiler ccache dos2unix debootstrap
 
 To create a full NetHunter system:
 ```bash
-./build.sh -f
+./build.sh -f -a arm64
 ```
 To create a minimal NetHunter filesystem:
 ```bash
-./build.sh -m
+./build.sh -m -a arm64
 ```
