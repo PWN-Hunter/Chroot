@@ -1,0 +1,55 @@
+#!/bin/bash
+
+export MALLOC_CHECK_=0 # workaround for LP: #520465
+export LC_ALL=C
+export DEBIAN_FRONTEND=noninteractive
+
+#
+# Copy custom packages to chroot and run them
+#
+
+#cp -rf packages/ $rootfs/
+
+#
+# Run Something in chroot
+#
+
+
+echo "[+] Custom stage!!!!"
+cat << EOF > "$rootfs/custom-stage"
+#!/bin/bash
+
+# Custom install (For mitmf)
+# Install avaible deps
+apt-get update
+apt-get upgrade
+apt-get -y install mitmf
+
+# Get pip 1-2 as these are deprecated/obselete/deleted from apt sources
+
+curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+python2 get-pip.py
+rm -rf get-pip.py
+
+# install bdfproxy for mana
+
+apt-get -y install bdfproxy
+
+# Removing files that will mess up some other tools
+
+rm -rf /usr/share/mitmf/plugins/filepwn.py
+
+echo "DONE"
+EOF
+
+# End of custom-stage script
+
+chmod +x "$rootfs/custom-stage"
+chroot_do /custom-stage
+rm -rf $rootfs/custom-stage
+
+# Install packages
+# Example dpkg -i packages/package.deb
+
+
+echo "[+] Completed custom stage"
