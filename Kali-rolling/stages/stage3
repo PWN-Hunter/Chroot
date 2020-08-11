@@ -299,8 +299,6 @@ sed -i 's|dhcpd -cf /etc/mana-toolkit/dhcpd\.conf.*|dnsmasq -z -C /etc/mana-tool
 
 # Start of Custom stuff
 
-# Start of minimal script
-
 if [ "$build_size" = full ]; then
 
 cat << EOF > "$rootfs/large-stuff"
@@ -332,9 +330,8 @@ rm -rf $rootfs/large-stuff
 
 fi
 
-if [ "$build_size" = minimal ]; then
+if [ "$build_size" = normal ]; then
 
-# Start of minimal script
 
 cat << EOF > "$rootfs/minimal-stuff"
 apt-get update
@@ -358,6 +355,30 @@ chmod +x "$rootfs/minimal-stuff"
 chroot_do /minimal-stuff
 
 rm -rf $rootfs/minimal-stuff
+
+fi
+
+if [ "$build_size" = pwnhunter ]; then
+
+
+cat << EOF > "$rootfs/pwnhunter-stuff"
+apt-get update
+apt-get upgrade
+apt-get update
+## Install nh packages
+echo "[+] Installing Custom stuff"
+echo "[+] sudo"
+apt-get install -y sudo
+echo "[+] kali-linux-exploitdb"
+apt-get install -y exploitdb
+echo "[+] MSFPC"
+apt-get install -y msfpc
+EOF
+
+chmod +x "$rootfs/pwnhunter-stuff"
+chroot_do /pwnhunter-stuff
+
+rm -rf $rootfs/pwnhunter-stuff
 
 fi
 

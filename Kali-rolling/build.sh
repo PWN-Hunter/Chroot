@@ -45,22 +45,25 @@ while [[ $# -gt 0 ]]; do
 		-f|--full)
 			build_size=full
 			;;
-		-m|--minimal)
-			build_size=minimal
+		-n|--normal)
+			build_size=normal
+			;;
+		-p|--pwnhunter)
+			build_size=pwnhunter
 			;;
 		-a|--arch)
 			case $2 in
-				armhf|arm64|i386|amd64)
+				armhf|arm64)
 					build_arch=$2
 					;;
 				*)
-					exit_help "Unknown architecture: $2"
+					exit_help "Unknown architecture or unsupported by this script: $2"
 					;;
 			esac
 			shift
 			;;
 		*)
-			exit_help "Unknown argument: $arg"
+			exit_help "Unknown argument, please use -h: $arg"
 			;;
 	esac
 	shift
@@ -68,8 +71,8 @@ done
 
 [ "$build_size" ] || exit_help "Build size not specified!"
 
-# set default architecture for most Android devices if not specified
-[ "$build_arch" ] || build_arch=armhf
+# set default architecture for most Android devices if not specified. Using arm64 as most of them are now arm64.
+[ "$build_arch" ] || build_arch=arm64
 
 rootfs="kali-$build_arch"
 build_output="output/kalifs-$build_arch-$build_size"
@@ -175,8 +178,16 @@ fi
 
 # MINIMAL PACKAGES
 # usbutils and pciutils is needed for wifite (unsure why) and apt-transport-https for updates
-pkg_minimal="openssh-server kali-defaults kali-archive-keyring
-	apt-transport-https ntpdate usbutils pciutils sudo vim"
+pkg_pwnhunter="
+        openssh-server kali-defaults kali-archive-keyring
+        apt-transport-https ntpdate usbutils pciutils sudo vim"
+
+pkg_normal="
+          atril catfish engrampa mate-calc policykit-1-gnome thunar-archive-plugin qterminal xfce4-whiskermenu-plugin xdg-user-dirs-gtk 
+          msfpc exe2hexbat bettercap
+          libapache2-mod-php7.3 libreadline6-dev libncurses5-dev libnewlib-arm-none-eabi
+          binutils-arm-none-eabi gcc-arm-none-eabi autoconf libtool make gcc-9 g++-9
+          libxml2-dev zlib1g-dev"
 
 # DEFAULT PACKAGES FULL INSTALL
 pkg_full="kali-linux-nethunter
@@ -210,18 +221,6 @@ case $build_arch in
 		packages="$pkg_minimal $pkg_minimal_arm64"
 		[ "$build_size" = full ] &&
 			packages="$packages $pkg_full $pkg_full_arm64"
-		;;
-	i386)
-		qemu_arch=i386
-		packages="$pkg_minimal $pkg_minimal_i386"
-		[ "$build_size" = full ] &&
-			packages="$packages $pkg_full $pkg_full_i386"
-		;;
-	amd64)
-		qemu_arch=x86_64
-		packages="$pkg_minimal $pkg_minimal_amd64"
-		[ "$build_size" = full ] &&
-			packages="$packages $pkg_full $pkg_full_amd64"
 		;;
 esac
 
