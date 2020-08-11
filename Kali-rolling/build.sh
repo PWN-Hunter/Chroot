@@ -13,7 +13,7 @@ display_help() {
 	echo "********************************************************************"
 	echo "Usage: ./build.sh [arguments]...                                   *"
 	echo "                                                                   *"
-	echo "************* Vanilla chroot builder version is 1.0.3 **************"
+	echo "************* Vanilla chroot builder version is 1.0.4 **************"
 	echo "                                                                   *"
 	echo "  -f, --full     build a rootfs with all the recommended packages  *"
 	echo "  -m, --minimal  build a rootfs with only the most basic packages  *"

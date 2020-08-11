@@ -351,17 +351,18 @@ apt-get install -y kali-linux-core
 echo "[+] kali-linux-exploitdb"
 apt-get install -y exploitdb
 echo "[+] MSFPC"
-apt-get install msfpc
+apt-get install -y msfpc
 EOF
 
 chmod +x "$rootfs/minimal-stuff"
 chroot_do /minimal-stuff
 
-# sry as i forgot to delete leftover
-
 rm -rf $rootfs/minimal-stuff
 
 fi
+
+# Copy netdiscover command to /bin as it cant be executed sometimes (Experienced it in pc kali rolling so may add it here too)
+chroot_do sudo cp /usr/local/sbin/netdiscover /usr/bin/netdiscover
 
 # End of Custom stuff
 
