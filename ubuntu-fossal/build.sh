@@ -13,11 +13,9 @@ display_help() {
 	echo "********************************************************************"
 	echo "Usage: ./build.sh [arguments]...                                   *"
 	echo "                                                                   *"
-	echo "************* Vanilla chroot builder version is 1.0.4 **************"
+	echo "************* Custom chroot builder version is 0.0.1 ***************"
 	echo "                                                                   *"
-	echo "  -f, --full     build a rootfs with all the recommended packages  *"
-	echo "  -m, --minimal  build a rootfs with only the most basic packages  *"
-	echo "  -p, --pwnhunter  build a rootfs with pwn stuff                   *"
+	echo "  -u, --ubuntu     build a rootfs with all the recommended packages  *"
 	echo "  -a, --arch     select a different architecture (default: armhf)  *"
 	echo "                 possible options: armhf, arm64, i386, amd64       *"
 	echo "  -h, --help     display this help message                         *"
@@ -43,28 +41,22 @@ while [[ $# -gt 0 ]]; do
 		-h|--help)
 			display_help
 			exit 0 ;;
-		-f|--full)
-			build_size=full
-			;;
-		-n|--normal)
-			build_size=normal
-			;;
-		-p|--pwnhunter)
-			build_size=pwnhunter
+		-u|--ubuntu)
+			build_size=ubuntu
 			;;
 		-a|--arch)
 			case $2 in
-				armhf|arm64)
+				armhf|arm64|i386|amd64)
 					build_arch=$2
 					;;
 				*)
-					exit_help "Unknown architecture or unsupported by this script: $2"
+					exit_help "Unknown architecture: $2"
 					;;
 			esac
 			shift
 			;;
 		*)
-			exit_help "Unknown argument, please use -h: $arg"
+			exit_help "Unknown argument see -h: $arg"
 			;;
 	esac
 	shift
@@ -72,7 +64,7 @@ done
 
 [ "$build_size" ] || exit_help "Build size not specified!"
 
-# set default architecture for most Android devices if not specified. Using arm64 as most of them are now arm64.
+# set default architecture for most Android devices if not specified
 [ "$build_arch" ] || build_arch=arm64
 
 rootfs="kali-$build_arch"
@@ -177,32 +169,16 @@ fi
 
 # Add packages you want installed here:
 
-# MINIMAL PACKAGES
+# ubuntu PACKAGES
 # usbutils and pciutils is needed for wifite (unsure why) and apt-transport-https for updates
-pkg_pwnhunter="
-        openssh-server kali-defaults kali-archive-keyring
-        apt-transport-https ntpdate usbutils pciutils sudo vim"
-
-pkg_normal="
-          atril catfish engrampa mate-calc policykit-1-gnome thunar-archive-plugin qterminal xfce4-whiskermenu-plugin xdg-user-dirs-gtk 
-          msfpc exe2hexbat bettercap
-          libapache2-mod-php7.3 libreadline6-dev libncurses5-dev libnewlib-arm-none-eabi
-          binutils-arm-none-eabi gcc-arm-none-eabi autoconf libtool make gcc-9 g++-9
-          libxml2-dev zlib1g-dev"
-
-# DEFAULT PACKAGES FULL INSTALL
-pkg_full="kali-linux-nethunter
-          kali-desktop-core atril catfish engrampa kali-undercover mate-calc policykit-1-gnome thunar-archive-plugin qterminal xfce4-whiskermenu-plugin xdg-user-dirs-gtk 
-          msfpc exe2hexbat bettercap
-          libapache2-mod-php7.3 libreadline6-dev libncurses5-dev libnewlib-arm-none-eabi
-          binutils-arm-none-eabi gcc-arm-none-eabi autoconf libtool make gcc-9 g++-9
-          libxml2-dev zlib1g-dev"
+pkg_ubuntu="openssh-server debian-archive-keyring
+	apt-transport-https ntpdate usbutils pciutils sudo vim"
 
 # ARCH SPECIFIC PACKAGES
-pkg_minimal_armhf="abootimg cgpt fake-hwclock vboot-utils vboot-kernel-utils nethunter-utils"
-pkg_minimal_arm64="$pkg_minimal_armhf"
-pkg_minimal_i386="$pkg_minimal_armhf"
-pkg_minimal_amd64="$pkg_minimal_armhf"
+pkg_ubuntu_armhf="abootimg cgpt fake-hwclock vboot-utils vboot-kernel-utils nethunter-utils"
+pkg_ubuntu_arm64="$pkg_ubuntu_armhf"
+pkg_ubuntu_i386="$pkg_ubuntu_armhf"
+pkg_ubuntu_amd64="$pkg_ubuntu_armhf"
 
 pkg_full_armhf=""
 pkg_full_arm64=""
@@ -213,15 +189,27 @@ pkg_full_amd64=""
 case $build_arch in
 	armhf)
 		qemu_arch=arm
-		packages="$pkg_minimal $pkg_minimal_armhf"
+		packages="$pkg_ubuntu $pkg_ubuntu_armhf"
 		[ "$build_size" = full ] &&
 			packages="$packages $pkg_full $pkg_full_armhf"
 		;;
 	arm64)
 		qemu_arch=aarch64
-		packages="$pkg_minimal $pkg_minimal_arm64"
+		packages="$pkg_ubuntu $pkg_ubuntu_arm64"
 		[ "$build_size" = full ] &&
 			packages="$packages $pkg_full $pkg_full_arm64"
+		;;
+	i386)
+		qemu_arch=i386
+		packages="$pkg_ubuntu $pkg_ubuntu_i386"
+		[ "$build_size" = full ] &&
+			packages="$packages $pkg_full $pkg_full_i386"
+		;;
+	amd64)
+		qemu_arch=x86_64
+		packages="$pkg_ubuntu $pkg_ubuntu_amd64"
+		[ "$build_size" = full ] &&
+			packages="$packages $pkg_full $pkg_full_amd64"
 		;;
 esac
 
@@ -265,6 +253,9 @@ echo "[+] Starting stage 2 (repo/config)"
 # Stage 3 - Downloads all packages, modify configuration files
 echo "[+] Starting stage 3 (packages/installation)"
 . stages/stage3
+
+# Custom stage (If you wanna add something)
+. stages/custom
 
 # Cleanup stage
 echo "[+] Starting stage 4 (cleanup)"

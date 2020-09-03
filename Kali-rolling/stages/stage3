@@ -369,10 +369,6 @@ apt-get update
 echo "[+] Installing Custom stuff"
 echo "[+] sudo"
 apt-get install -y sudo
-echo "[+] kali-linux-exploitdb"
-apt-get install -y exploitdb
-echo "[+] MSFPC"
-apt-get install -y msfpc
 EOF
 
 chmod +x "$rootfs/pwnhunter-stuff"

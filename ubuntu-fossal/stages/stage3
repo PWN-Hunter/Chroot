@@ -1,0 +1,78 @@
+#!/bin/bash
+
+export MALLOC_CHECK_=0 # workaround for LP: #520465
+export LC_ALL=C
+export DEBIAN_FRONTEND=noninteractive
+
+## Sometimes we might need to install packages that are not in the kali repository
+## Copy packages from local repository to chroot for installation
+mkdir -p $rootfs/tmp/deb/
+if ls $rootfs/../repo/$build_arch/*.deb &>/dev/null; then
+    echo "[+] Copying $build_arch packages to chroot from local repository"
+    cp $rootfs/../repo/$build_arch/*.deb $rootfs/tmp/deb/
+fi
+if ls $rootfs/../repo/all/*.deb &>/dev/null; then
+    echo "[+] Copying generic packages to chroot from local repository"
+    cp $rootfs/../repo/all/*.deb $rootfs/tmp/deb/
+fi
+
+mount -t proc proc "$rootfs/proc"
+mount -o bind /dev "$rootfs/dev"
+mount -o bind /dev/pts "$rootfs/dev/pts"
+mount -t sysfs sys "$rootfs/sys"
+
+
+chmod +x "$rootfs/third-stage"
+chroot_do /third-stage
+
+# Add /system/xbin and /system/bin to PATH
+echo "[+] Adding /system/xbin and /system/bin to path"
+cat << EOF >> "$rootfs/root/.profile"
+
+# Add /system/xbin and /system/bin to PATH
+PATH="$PATH:/system/xbin:/system/bin"
+EOF
+
+# Source .bashrc and .profile at login
+echo "[+] Adding bashrc/profile sourcing to bash_profile"
+cat << EOF >> "$rootfs/root/.bash_profile"
+
+. /root/.bashrc
+. /root/.profile
+cd ~
+EOF
+
+# DNSMASQ Configuration options for optional access point
+cat << EOF > "$rootfs/etc/dnsmasq.conf"
+log-facility=/var/log/dnsmasq.log
+#address=/#/10.0.0.1
+#address=/google.com/10.0.0.1
+interface=wlan1
+dhcp-range=10.0.0.10,10.0.0.250,12h
+dhcp-option=3,10.0.0.1
+dhcp-option=6,10.0.0.1
+#no-resolv
+log-queries
+EOF
+
+# In order for metasploit to work daemon,nginx,postgres must all be added to inet
+# beef-xss creates user beef-xss. Openvpn server requires nobdy:nobody in order to work.
+cat << EOF >> "$rootfs/etc/group"
+inet:x:3004:postgres,root,beef-xss,daemon,nginx,mysql
+nobody:x:3004:nobody
+EOF
+
+cp -f "$rootfs/etc/skel/.vnc/xstartup" "$rootfs/root/.vnc/xstartup"
+
+# Apt now adds a new user to "nobody" but the _apt user can't access updates
+# because of inet.  Modify passwd to put them in inet group for android
+sed -i -e 's/^\(_apt:\)\([^:]\)\(:[0-9]*\)\(:[0-9]*\):/\1\2\3:3004:/' "$rootfs/etc/passwd"
+
+# Insert correct .bashrc file from kali-defaults
+chroot_do cp /etc/skel/.bashrc /root/.bashrc
+
+# Copy necessary scripts and make executable (/dev/null to supress error msgs for following symlinks)
+chroot_do chmod 755 /usr/bin/* 2> /dev/null
+chroot_do chmod 755 /usr/share/mana-toolkit/run-mana/*.sh 2> /dev/null
+
+echo "[+] Completed stage 3!"
